@@ -6,7 +6,7 @@ import { keys } from "../input/keyboard";
 import { updatePlayer } from "./physics";
 import { resolveVertical } from "./resolve";
 import { renderWorld, renderPlayer, renderBullets } from "../render/renderer";
-import { renderHealthBar, renderDebugInfo } from "../render/ui";
+import { renderHealthBar, renderDebugInfo, renderKillCount } from "../render/ui";
 import { networkManager } from "../net/socket";
 
 export class Game {
@@ -19,7 +19,7 @@ export class Game {
     this.world = new World();
     this.player = null; // Will be created after name entry
     this.camera = new Camera(canvas.width, canvas.height);
-    this.bullets = [];
+    this.bullets = []; // Server-authoritative bullets
     this.otherPlayers = new Map(); // Map of playerName -> Player object
 
     this.devMode = false; // Developer mode toggle
@@ -33,8 +33,8 @@ export class Game {
 
   setupNetworkCallbacks() {
     // Handle game state updates from server
-    networkManager.onStateUpdate = (players) => {
-      this.handleGameState(players);
+    networkManager.onStateUpdate = (gameState) => {
+      this.handleGameState(gameState);
     };
 
     // Handle unexpected disconnections
@@ -43,15 +43,29 @@ export class Game {
     };
   }
 
-  handleGameState(players) {
+  handleGameState(gameState) {
     if (!this.player) return;
+
+    const { players, bullets } = gameState;
 
     // Update other players
     const currentPlayers = new Set();
 
     players.forEach((playerData) => {
-      // Skip our own player
+      // Update our own player from server (for health and respawns)
       if (playerData.name === this.player.name) {
+        this.player.health = playerData.health;
+        this.player.killCount = playerData.killCount || 0;
+        
+        // If player respawned (position changed significantly), update position
+        const distanceFromServer = Math.abs(this.player.pos.x - playerData.x) + Math.abs(this.player.pos.y - playerData.y);
+        if (distanceFromServer > 500) {
+          // Teleported/respawned - sync position from server
+          this.player.pos.x = playerData.x;
+          this.player.pos.y = playerData.y;
+          this.player.vel.x = playerData.velX;
+          this.player.vel.y = playerData.velY;
+        }
         return;
       }
 
@@ -67,6 +81,7 @@ export class Game {
         otherPlayer.facingDirection = playerData.facing;
         otherPlayer.onGround = playerData.onGround;
         otherPlayer.health = playerData.health;
+        otherPlayer.killCount = playerData.killCount || 0;
       } else {
         // Create new player
         const otherPlayer = new Player(
@@ -76,6 +91,7 @@ export class Game {
           playerData.color
         );
         otherPlayer.health = playerData.health;
+        otherPlayer.killCount = playerData.killCount || 0;
         this.otherPlayers.set(playerData.name, otherPlayer);
         console.log(`➕ Player ${playerData.name} joined the game`);
       }
@@ -88,6 +104,16 @@ export class Game {
         console.log(`➖ Player ${name} left the game`);
       }
     }
+
+    // Update bullets from server
+    this.bullets = (bullets || []).map((bulletData) => ({
+      id: bulletData.id,
+      ownerName: bulletData.ownerName,
+      pos: { x: bulletData.x, y: bulletData.y },
+      direction: bulletData.direction,
+      width: 8,
+      height: 4,
+    }));
   }
 
   setupNameEntry() {
@@ -254,42 +280,23 @@ export class Game {
       this.fireBullet();
       this.player.shoot(this.currentTime);
     }
-
-    // Update bullets
-    this.bullets = this.bullets.filter((bullet) => {
-      bullet.update(dt);
-      // Remove bullets that are expired or out of bounds
-      return (
-        !bullet.isExpired() &&
-        bullet.pos.x > 0 &&
-        bullet.pos.x < this.world.width
-      );
-    });
-    
-    // Check if player fell into pit (death zone)
-    if (this.player.pos.y > this.world.height) {
-      const remainingHealth = this.player.takeDamage(1);
-      
-      if (remainingHealth > 0) {
-        // Still alive, respawn
-        this.player.respawn();
-      } else {
-        // Game over - could add game over screen here
-        // For now, just respawn with full health
-        this.player.health = this.player.maxHealth;
-        this.player.respawn();
-      }
-    }
     
     this.camera.follow(this.player, this.world.width, this.world.height);
   }
 
   fireBullet() {
-    // Spawn bullet from center of player, in facing direction
+    // Send bullet fire message to server
     const bulletX = this.player.pos.x + this.player.width / 2;
     const bulletY = this.player.pos.y + this.player.height / 2;
-    const bullet = new Bullet(bulletX, bulletY, this.player.facingDirection);
-    this.bullets.push(bullet);
+    
+    networkManager.send({
+      type: "fire",
+      payload: {
+        x: bulletX,
+        y: bulletY,
+        direction: this.player.facingDirection,
+      },
+    });
   }
 
   render() {
@@ -319,6 +326,7 @@ export class Game {
 
     // UI overlay (not affected by camera)
     renderHealthBar(this.ctx, this.player);
+    renderKillCount(this.ctx, this.player, this.canvas.width);
     
     // Debug info (only in dev mode)
     if (this.devMode) {

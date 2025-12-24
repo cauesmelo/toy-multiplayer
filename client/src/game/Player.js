@@ -12,6 +12,7 @@ export class Player {
 
     this.health = 3;
     this.maxHealth = 3;
+    this.killCount = 0;
 
     this.facingDirection = 1;
     this.fireRate = 0.3;

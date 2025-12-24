@@ -74,3 +74,40 @@ export function renderDebugInfo(ctx, player, camera) {
 
   ctx.fillText(`Coyote: ${player.coyoteTime.toFixed(3)}s`, textX, textY);
 }
+
+export function renderKillCount(ctx, player, canvasWidth) {
+  const padding = 10;
+  const boxPadding = 12;
+  
+  // Text setup
+  ctx.font = "bold 24px sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+  
+  // Measure text
+  const killText = `${player.killCount} 💀`;
+  const textWidth = ctx.measureText(killText).width;
+  const textHeight = 30;
+  
+  // Position in top right
+  const boxX = canvasWidth - textWidth - boxPadding * 2 - padding;
+  const boxY = padding;
+  const boxWidth = textWidth + boxPadding * 2;
+  const boxHeight = textHeight + boxPadding;
+  
+  // Background border
+  ctx.fillStyle = Palette.world.outline;
+  ctx.fillRect(boxX - 2, boxY - 2, boxWidth + 4, boxHeight + 4);
+  
+  // Background
+  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+  
+  // Kill count text
+  ctx.fillStyle = Palette.ui.warning;
+  ctx.fillText(killText, canvasWidth - padding - boxPadding, boxY + boxPadding);
+  
+  // Reset alignment
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+}

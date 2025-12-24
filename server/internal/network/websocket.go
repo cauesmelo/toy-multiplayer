@@ -4,79 +4,15 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"sync"
 
+	"github.com/cauesmelo/toy-multiplayer/server/internal/game"
 	"github.com/gorilla/websocket"
 )
-
-var allowedOrigins = []string{
-	"http://localhost:5173",
-}
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
-}
-
-// Player colors - 8 distinct colors
-var playerColors = []string{
-	"#FF6B6B", // Red
-	"#4ECDC4", // Cyan
-	"#45B7D1", // Blue
-	"#FFA07A", // Orange
-	"#98D8C8", // Mint
-	"#F7DC6F", // Yellow
-	"#BB8FCE", // Purple
-	"#85C1E2", // Sky Blue
-}
-
-// ColorManager manages color assignment to players
-type ColorManager struct {
-	mu        sync.Mutex
-	available []string
-	assigned  map[string]string // playerName -> color
-}
-
-var colorManager = &ColorManager{
-	available: make([]string, len(playerColors)),
-	assigned:  make(map[string]string),
-}
-
-func init() {
-	copy(colorManager.available, playerColors)
-}
-
-// AssignColor assigns a color to a player
-func (cm *ColorManager) AssignColor(playerName string) string {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-
-	var color string
-	if len(cm.available) > 0 {
-		// Take first available color
-		color = cm.available[0]
-		cm.available = cm.available[1:]
-	} else {
-		// All colors in use, reuse the first one
-		color = playerColors[0]
-	}
-
-	cm.assigned[playerName] = color
-	log.Printf("Assigned color %s to %s (available: %d)", color, playerName, len(cm.available))
-	return color
-}
-
-// ReleaseColor returns a color back to the pool
-func (cm *ColorManager) ReleaseColor(playerName string) {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-
-	if color, exists := cm.assigned[playerName]; exists {
-		delete(cm.assigned, playerName)
-		cm.available = append(cm.available, color)
-		log.Printf("Released color %s from %s (available: %d)", color, playerName, len(cm.available))
-	}
 }
 
 // Message types
@@ -85,159 +21,39 @@ const (
 	MsgTypeError    = "error"
 	MsgTypePosition = "position"
 	MsgTypeState    = "state"
+	MsgTypeFire     = "fire"
 )
 
+// Message represents a WebSocket message
 type Message struct {
 	Type    string `json:"type"`
 	Payload any    `json:"payload"`
 }
 
+// JoinPayload represents a join request
 type JoinPayload struct {
 	Name string `json:"name"`
 }
 
+// JoinResponse represents a join response
 type JoinResponse struct {
 	Name  string `json:"name"`
 	Color string `json:"color"`
 }
 
+// ErrorPayload represents an error message
 type ErrorPayload struct {
 	Message string `json:"message"`
 }
 
-type PositionPayload struct {
-	X        float64 `json:"x"`
-	Y        float64 `json:"y"`
-	VelX     float64 `json:"velX"`
-	VelY     float64 `json:"velY"`
-	Facing   int     `json:"facing"`
-	OnGround bool    `json:"onGround"`
-	Health   int     `json:"health"`
+var gameServer *game.Server
+
+func init() {
+	gameServer = game.NewServer()
+	gameServer.Start()
 }
 
-type PlayerState struct {
-	Name     string  `json:"name"`
-	Color    string  `json:"color"`
-	X        float64 `json:"x"`
-	Y        float64 `json:"y"`
-	VelX     float64 `json:"velX"`
-	VelY     float64 `json:"velY"`
-	Facing   int     `json:"facing"`
-	OnGround bool    `json:"onGround"`
-	Health   int     `json:"health"`
-}
-
-type GameStatePayload struct {
-	Players []PlayerState `json:"players"`
-}
-
-// Player represents a connected player
-type Player struct {
-	Name        string
-	Color       string
-	Conn        *websocket.Conn
-	Position    PositionPayload
-	Connected   bool
-	mu          sync.Mutex
-	connectedMu sync.RWMutex
-}
-
-// GameServer manages all connected players and game state
-type GameServer struct {
-	players map[string]*Player
-	mu      sync.RWMutex
-}
-
-var gameServer = &GameServer{
-	players: make(map[string]*Player),
-}
-
-// AddPlayer adds a player to the game
-func (gs *GameServer) AddPlayer(player *Player) {
-	gs.mu.Lock()
-	defer gs.mu.Unlock()
-	gs.players[player.Name] = player
-	log.Printf("Player %s added to game server (total: %d)", player.Name, len(gs.players))
-}
-
-// RemovePlayer removes a player from the game
-func (gs *GameServer) RemovePlayer(name string) {
-	gs.mu.Lock()
-	defer gs.mu.Unlock()
-	delete(gs.players, name)
-	log.Printf("Player %s removed from game server (total: %d)", name, len(gs.players))
-}
-
-// UpdatePlayerPosition updates a player's position
-func (gs *GameServer) UpdatePlayerPosition(name string, pos PositionPayload) {
-	gs.mu.RLock()
-	player, exists := gs.players[name]
-	gs.mu.RUnlock()
-
-	if exists {
-		player.mu.Lock()
-		player.Position = pos
-		player.mu.Unlock()
-	}
-}
-
-// BroadcastGameState sends current game state to all players
-func (gs *GameServer) BroadcastGameState() {
-	gs.mu.RLock()
-	defer gs.mu.RUnlock()
-
-	// Build game state - only include connected players
-	players := make([]PlayerState, 0, len(gs.players))
-	for _, player := range gs.players {
-		player.connectedMu.RLock()
-		isConnected := player.Connected
-		player.connectedMu.RUnlock()
-
-		if !isConnected {
-			continue
-		}
-
-		player.mu.Lock()
-		players = append(players, PlayerState{
-			Name:     player.Name,
-			Color:    player.Color,
-			X:        player.Position.X,
-			Y:        player.Position.Y,
-			VelX:     player.Position.VelX,
-			VelY:     player.Position.VelY,
-			Facing:   player.Position.Facing,
-			OnGround: player.Position.OnGround,
-			Health:   player.Position.Health,
-		})
-		player.mu.Unlock()
-	}
-
-	stateMsg := Message{
-		Type: MsgTypeState,
-		Payload: GameStatePayload{
-			Players: players,
-		},
-	}
-
-	// Send to all connected players
-	for _, player := range gs.players {
-		player.connectedMu.RLock()
-		isConnected := player.Connected
-		player.connectedMu.RUnlock()
-
-		if !isConnected {
-			continue
-		}
-
-		if err := player.Conn.WriteJSON(stateMsg); err != nil {
-			// Mark as disconnected on write error
-			player.connectedMu.Lock()
-			player.Connected = false
-			player.connectedMu.Unlock()
-		}
-	}
-}
-
+// HandleWebSocket handles WebSocket connections
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -280,15 +96,16 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Assign color to player
+	colorManager := gameServer.GetColorManager()
 	playerColor := colorManager.AssignColor(joinPayload.Name)
 
 	// Create player
-	player := &Player{
+	player := &game.Player{
 		Name:      joinPayload.Name,
 		Color:     playerColor,
 		Conn:      conn,
 		Connected: true,
-		Position: PositionPayload{
+		Position: game.PositionPayload{
 			X:      100,
 			Y:      1600,
 			Health: 3,
@@ -323,9 +140,9 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		var msg Message
 		if err := conn.ReadJSON(&msg); err != nil {
 			// Mark as disconnected immediately
-			player.connectedMu.Lock()
+			player.ConnectedMu.Lock()
 			player.Connected = false
-			player.connectedMu.Unlock()
+			player.ConnectedMu.Unlock()
 
 			// Cleanup on disconnect
 			gameServer.RemovePlayer(joinPayload.Name)
@@ -352,7 +169,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			var posPayload PositionPayload
+			var posPayload game.PositionPayload
 			if err := json.Unmarshal(posBytes, &posPayload); err != nil {
 				continue
 			}
@@ -360,8 +177,26 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			// Update player position
 			gameServer.UpdatePlayerPosition(joinPayload.Name, posPayload)
 
-			// Broadcast updated state to all players
-			gameServer.BroadcastGameState()
+		case MsgTypeFire:
+			// Parse fire message
+			fireBytes, err := json.Marshal(msg.Payload)
+			if err != nil {
+				continue
+			}
+
+			var firePayload game.FirePayload
+			if err := json.Unmarshal(fireBytes, &firePayload); err != nil {
+				continue
+			}
+
+			// Create bullet
+			bulletID := gameServer.AddBullet(
+				joinPayload.Name,
+				firePayload.X,
+				firePayload.Y,
+				firePayload.Direction,
+			)
+			log.Printf("🔫 %s fired bullet %s at (%.0f, %.0f)", joinPayload.Name, bulletID, firePayload.X, firePayload.Y)
 
 		default:
 			log.Printf("Unknown message type from %s: %s", joinPayload.Name, msg.Type)

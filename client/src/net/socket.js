@@ -80,7 +80,7 @@ class NetworkManager {
       case "state":
         // Game state update from server
         if (this.onStateUpdate) {
-          this.onStateUpdate(msg.payload.players);
+          this.onStateUpdate(msg.payload);
         }
         break;
       
