@@ -5,6 +5,8 @@ import { Bullet } from "./Bullet";
 import { keys } from "../input/keyboard";
 import { updatePlayer } from "./physics";
 import { resolveVertical } from "./resolve";
+import { renderWorld, renderPlayer, renderBullets } from "../render/renderer";
+import { renderHealthBar, renderDebugInfo } from "../render/ui";
 
 export class Game {
   constructor(canvas) {
@@ -91,104 +93,16 @@ export class Game {
     this.ctx.save();
     this.camera.apply(this.ctx);
 
-    // Background
-    this.ctx.fillStyle = "#0a0a0a";
-    this.ctx.fillRect(0, 0, this.world.width, this.world.height);
-
-    // Platforms
-    this.ctx.fillStyle = "#444";
-    for (const p of this.world.platforms) {
-      this.ctx.fillRect(p.x, p.y, p.width, p.height);
-    }
-
-    // Player
-    this.ctx.fillStyle = "blue";
-    this.ctx.fillRect(
-      this.player.pos.x,
-      this.player.pos.y,
-      this.player.width,
-      this.player.height
-    );
-
-    // Gun barrel indicator
-    this.ctx.fillStyle = "white";
-    const gunLength = 15;
-    const gunY = this.player.pos.y + this.player.height / 2 - 2;
-    if (this.player.facingDirection === 1) {
-      this.ctx.fillRect(
-        this.player.pos.x + this.player.width,
-        gunY,
-        gunLength,
-        4
-      );
-    } else {
-      this.ctx.fillRect(this.player.pos.x - gunLength, gunY, gunLength, 4);
-    }
-
-    // Bullets
-    this.ctx.fillStyle = "yellow";
-    for (const bullet of this.bullets) {
-      this.ctx.fillRect(
-        bullet.pos.x,
-        bullet.pos.y,
-        bullet.width,
-        bullet.height
-      );
-    }
+    // Render game world
+    renderWorld(this.ctx, this.world);
+    renderPlayer(this.ctx, this.player);
+    renderBullets(this.ctx, this.bullets);
 
     // Restore camera transformation
     this.ctx.restore();
 
     // UI overlay (not affected by camera)
-    this.renderUI();
-  }
-
-  renderUI() {
-    // Health bar - simple red boxes
-    const boxSize = 30;
-    const boxPadding = 5;
-    const startX = 10;
-    const startY = 10;
-
-    for (let i = 0; i < this.player.maxHealth; i++) {
-      const x = startX + i * (boxSize + boxPadding);
-
-      if (i < this.player.health) {
-        // Filled box (alive)
-        this.ctx.fillStyle = "red";
-      } else {
-        // Empty box (lost)
-        this.ctx.fillStyle = "#333";
-      }
-
-      this.ctx.fillRect(x, startY, boxSize, boxSize);
-
-      // Outline
-      this.ctx.strokeStyle = "white";
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeRect(x, startY, boxSize, boxSize);
-    }
-
-    // Debug info below health bar
-    this.ctx.fillStyle = "white";
-    this.ctx.font = "12px monospace";
-    this.ctx.fillText(
-      `Position: ${Math.round(this.player.pos.x)}, ${Math.round(
-        this.player.pos.y
-      )}`,
-      10,
-      60
-    );
-    this.ctx.fillText(
-      `Camera: ${Math.round(this.camera.x)}, ${Math.round(this.camera.y)}`,
-      10,
-      75
-    );
-    this.ctx.fillText(`On Ground: ${this.player.onGround}`, 10, 90);
-    this.ctx.fillText(
-      `Coyote Time: ${this.player.coyoteTime.toFixed(3)}s`,
-      10,
-      105
-    );
+    renderHealthBar(this.ctx, this.player);
+    renderDebugInfo(this.ctx, this.player, this.camera);
   }
 }

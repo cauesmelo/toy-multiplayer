@@ -2,19 +2,19 @@ export class Player {
   constructor(x, y) {
     this.pos = { x, y };
     this.vel = { x: 0, y: 0 };
-    this.spawnPos = { x, y }; // Remember spawn position for respawn
+    this.spawnPos = { x, y };
 
     this.width = 32;
     this.height = 48;
 
     this.onGround = false;
-    this.coyoteTime = 0; // Time since leaving ground
+    this.coyoteTime = 0;
 
     this.health = 3;
     this.maxHealth = 3;
 
-    this.facingDirection = 1; // 1 for right, -1 for left
-    this.fireRate = 0.2; // seconds between shots
+    this.facingDirection = 1;
+    this.fireRate = 0.3;
     this.lastShotTime = 0;
   }
 
