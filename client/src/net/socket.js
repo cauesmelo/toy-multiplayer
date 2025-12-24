@@ -3,11 +3,14 @@ class NetworkManager {
     this.socket = null;
     this.connected = false;
     this.playerName = null;
+    this.playerColor = null;
+    this.joinResolver = null;
   }
 
   connect(playerName) {
     return new Promise((resolve, reject) => {
       this.playerName = playerName;
+      this.joinResolver = resolve;
       this.socket = new WebSocket("ws://localhost:5173/ws");
 
       this.socket.onopen = () => {
@@ -21,8 +24,6 @@ class NetworkManager {
             name: playerName,
           },
         });
-
-        resolve();
       };
 
       this.socket.onerror = (error) => {
@@ -52,6 +53,17 @@ class NetworkManager {
     console.log("📨 Message from server:", msg);
 
     switch (msg.type) {
+      case "joined":
+        this.playerColor = msg.payload.color;
+        console.log(`🎨 Assigned color: ${this.playerColor}`);
+        if (this.joinResolver) {
+          this.joinResolver({
+            name: msg.payload.name,
+            color: msg.payload.color,
+          });
+          this.joinResolver = null;
+        }
+        break;
       case "error":
         console.error("Server error:", msg.payload.message);
         alert(`Server error: ${msg.payload.message}`);

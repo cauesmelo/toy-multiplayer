@@ -66,17 +66,17 @@ export class Game {
   async startGame(playerName) {
     try {
       // Connect to server and send player name
-      await networkManager.connect(playerName);
+      const playerData = await networkManager.connect(playerName);
       
-      // Create local player
-      this.player = new Player(100, 1600, playerName);
+      // Create local player with assigned color
+      this.player = new Player(100, 1600, playerData.name, playerData.color);
       this.gameState = "playing";
       
       // Hide menu
       document.getElementById("name-entry-screen").style.display = "none";
       document.getElementById("game").style.display = "block";
       
-      console.log(`🎮 Game started! Welcome, ${playerName}`);
+      console.log(`🎮 Game started! Welcome, ${playerData.name} (${playerData.color})`);
     } catch (error) {
       console.error("Failed to connect to server:", error);
       alert("Failed to connect to server. Please make sure the server is running.");

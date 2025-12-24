@@ -1,5 +1,5 @@
 export class Player {
-  constructor(x, y, name = "Player") {
+  constructor(x, y, name = "Player", color = "#4ECDC4") {
     this.pos = { x, y };
     this.vel = { x: 0, y: 0 };
     this.spawnPos = { x, y };
@@ -18,6 +18,7 @@ export class Player {
     this.lastShotTime = 0;
 
     this.name = name;
+    this.color = color;
   }
 
   respawn() {

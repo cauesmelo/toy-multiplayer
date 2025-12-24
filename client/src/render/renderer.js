@@ -55,8 +55,8 @@ export function renderPlayer(ctx, player) {
     player.height + 4
   );
 
-  // Player body - use first player color (crimson)
-  ctx.fillStyle = Palette.players[0];
+  // Player body - use server-assigned color
+  ctx.fillStyle = player.color;
   ctx.fillRect(player.pos.x, player.pos.y, player.width, player.height);
 
   // Gun barrel outline
