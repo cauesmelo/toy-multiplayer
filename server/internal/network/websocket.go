@@ -81,8 +81,10 @@ func (cm *ColorManager) ReleaseColor(playerName string) {
 
 // Message types
 const (
-	MsgTypeJoin  = "join"
-	MsgTypeError = "error"
+	MsgTypeJoin     = "join"
+	MsgTypeError    = "error"
+	MsgTypePosition = "position"
+	MsgTypeState    = "state"
 )
 
 type Message struct {
@@ -101,6 +103,136 @@ type JoinResponse struct {
 
 type ErrorPayload struct {
 	Message string `json:"message"`
+}
+
+type PositionPayload struct {
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	VelX     float64 `json:"velX"`
+	VelY     float64 `json:"velY"`
+	Facing   int     `json:"facing"`
+	OnGround bool    `json:"onGround"`
+}
+
+type PlayerState struct {
+	Name     string  `json:"name"`
+	Color    string  `json:"color"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	VelX     float64 `json:"velX"`
+	VelY     float64 `json:"velY"`
+	Facing   int     `json:"facing"`
+	OnGround bool    `json:"onGround"`
+}
+
+type GameStatePayload struct {
+	Players []PlayerState `json:"players"`
+}
+
+// Player represents a connected player
+type Player struct {
+	Name        string
+	Color       string
+	Conn        *websocket.Conn
+	Position    PositionPayload
+	Connected   bool
+	mu          sync.Mutex
+	connectedMu sync.RWMutex
+}
+
+// GameServer manages all connected players and game state
+type GameServer struct {
+	players map[string]*Player
+	mu      sync.RWMutex
+}
+
+var gameServer = &GameServer{
+	players: make(map[string]*Player),
+}
+
+// AddPlayer adds a player to the game
+func (gs *GameServer) AddPlayer(player *Player) {
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
+	gs.players[player.Name] = player
+	log.Printf("Player %s added to game server (total: %d)", player.Name, len(gs.players))
+}
+
+// RemovePlayer removes a player from the game
+func (gs *GameServer) RemovePlayer(name string) {
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
+	delete(gs.players, name)
+	log.Printf("Player %s removed from game server (total: %d)", name, len(gs.players))
+}
+
+// UpdatePlayerPosition updates a player's position
+func (gs *GameServer) UpdatePlayerPosition(name string, pos PositionPayload) {
+	gs.mu.RLock()
+	player, exists := gs.players[name]
+	gs.mu.RUnlock()
+
+	if exists {
+		player.mu.Lock()
+		player.Position = pos
+		player.mu.Unlock()
+	}
+}
+
+// BroadcastGameState sends current game state to all players
+func (gs *GameServer) BroadcastGameState() {
+	gs.mu.RLock()
+	defer gs.mu.RUnlock()
+
+	// Build game state - only include connected players
+	players := make([]PlayerState, 0, len(gs.players))
+	for _, player := range gs.players {
+		player.connectedMu.RLock()
+		isConnected := player.Connected
+		player.connectedMu.RUnlock()
+
+		if !isConnected {
+			continue
+		}
+
+		player.mu.Lock()
+		players = append(players, PlayerState{
+			Name:     player.Name,
+			Color:    player.Color,
+			X:        player.Position.X,
+			Y:        player.Position.Y,
+			VelX:     player.Position.VelX,
+			VelY:     player.Position.VelY,
+			Facing:   player.Position.Facing,
+			OnGround: player.Position.OnGround,
+		})
+		player.mu.Unlock()
+	}
+
+	stateMsg := Message{
+		Type: MsgTypeState,
+		Payload: GameStatePayload{
+			Players: players,
+		},
+	}
+
+	// Send to all connected players
+	for _, player := range gs.players {
+		player.connectedMu.RLock()
+		isConnected := player.Connected
+		player.connectedMu.RUnlock()
+
+		if !isConnected {
+			continue
+		}
+
+		if err := player.Conn.WriteJSON(stateMsg); err != nil {
+			// Mark as disconnected on write error
+			player.connectedMu.Lock()
+			player.Connected = false
+			player.connectedMu.Unlock()
+		}
+	}
 }
 
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -147,6 +279,21 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Assign color to player
 	playerColor := colorManager.AssignColor(joinPayload.Name)
 
+	// Create player
+	player := &Player{
+		Name:      joinPayload.Name,
+		Color:     playerColor,
+		Conn:      conn,
+		Connected: true,
+		Position: PositionPayload{
+			X: 100,
+			Y: 1600,
+		},
+	}
+
+	// Add to game server
+	gameServer.AddPlayer(player)
+
 	// Send join confirmation with color
 	joinResponse := Message{
 		Type: "joined",
@@ -158,17 +305,30 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	if err := conn.WriteJSON(joinResponse); err != nil {
 		log.Printf("Error sending join response: %v", err)
 		colorManager.ReleaseColor(joinPayload.Name)
+		gameServer.RemovePlayer(joinPayload.Name)
 		return
 	}
 
 	log.Printf("Player joined: %s (color: %s)", joinPayload.Name, playerColor)
 
+	// Send initial game state
+	gameServer.BroadcastGameState()
+
 	// Keep connection alive and handle messages
 	for {
 		var msg Message
 		if err := conn.ReadJSON(&msg); err != nil {
-			// Release color when player disconnects
+			// Mark as disconnected immediately
+			player.connectedMu.Lock()
+			player.Connected = false
+			player.connectedMu.Unlock()
+
+			// Cleanup on disconnect
+			gameServer.RemovePlayer(joinPayload.Name)
 			colorManager.ReleaseColor(joinPayload.Name)
+
+			// Broadcast updated state
+			gameServer.BroadcastGameState()
 
 			// Check if it's a clean disconnect
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
@@ -179,7 +339,29 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		log.Printf("Message from %s: %s", joinPayload.Name, msg.Type)
+		// Handle different message types
+		switch msg.Type {
+		case MsgTypePosition:
+			// Parse position update
+			posBytes, err := json.Marshal(msg.Payload)
+			if err != nil {
+				continue
+			}
+
+			var posPayload PositionPayload
+			if err := json.Unmarshal(posBytes, &posPayload); err != nil {
+				continue
+			}
+
+			// Update player position
+			gameServer.UpdatePlayerPosition(joinPayload.Name, posPayload)
+
+			// Broadcast updated state to all players
+			gameServer.BroadcastGameState()
+
+		default:
+			log.Printf("Unknown message type from %s: %s", joinPayload.Name, msg.Type)
+		}
 	}
 }
 
