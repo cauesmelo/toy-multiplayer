@@ -1,29 +1,31 @@
+// Rio de Janeiro inspired color palette
+// Bright, tropical, vibrant - capturing the city's energy and natural beauty
 export const Palette = {
   world: {
-    background: "#161827",      // Darkest - pushed cooler
-    backgroundAlt: "#1c1f33",   // Inner area - slightly lighter
-    platform: "#5f678a",        // Mid value - clear separation
-    platformEdge: "#747da6",    // Top highlight - implied light
-    outline: "#0f111a",         // Almost black
-    frame: "#2a2d44",           // Subtle border
+    background: "#87CEEB",      // Céu Carioca (Rio Sky) - bright sky blue
+    backgroundAlt: "#B0E0E6",   // Frescor Oceânico (Ocean Fresh) - powder blue
+    platform: "#DEB887",        // Areia da Praia (Beach Sand) - burlywood
+    platformEdge: "#F4A460",    // Sol Dourado (Golden Sun) - sandy brown
+    outline: "#8B7355",         // Sombra Tropical (Tropical Shadow) - brown
+    frame: "#20B2AA",           // Água do Mar (Sea Water) - light sea green
   },
 
   ui: {
-    text: "#e6e6eb",
-    accent: "#4fd1c5",
-    warning: "#ff6b6b",         // Softer red
-    success: "#6bff95",
+    text: "#2F4F4F",            // Dark slate for readability on light bg
+    accent: "#FF6B35",          // Pôr do Sol (Sunset) - coral orange
+    warning: "#DC143C",         // Desfile de Carnaval (Carnival) - crimson
+    success: "#32CD32",         // Floresta (Forest) - lime green
   },
 
   players: [
-    "#ff5c5c", // warmer, brighter red (Player 1)
-    "#457b9d", // royal blue
-    "#2a9d8f", // emerald
-    "#f4a261", // amber
-    "#9b5de5", // violet
-    "#4cc9f0", // sky blue
-    "#8ac926", // lime
-    "#ff4d6d", // magenta
+    "#FF6B6B", // Sol Poente (Setting Sun) - coral red
+    "#4ECDC4", // Água Cristalina (Crystal Water) - turquoise
+    "#45B7D1", // Céu do Rio (Rio Sky) - sky blue
+    "#FFA07A", // Laranja Tropical (Tropical Orange) - light salmon
+    "#98D8C8", // Verde Água (Water Green) - aquamarine
+    "#F7DC6F", // Amarelo Vibrante (Vibrant Yellow) - mustard
+    "#BB8FCE", // Ipê Roxo (Purple Trumpet Tree) - lavender
+    "#85C1E2", // Azul Piscina (Pool Blue) - baby blue
   ],
 };
 

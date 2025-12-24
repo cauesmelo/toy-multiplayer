@@ -27,16 +27,19 @@ export function renderPlayer(ctx, player) {
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
 
-  // Name background
+  // Name background with border
   const nameWidth = ctx.measureText(player.name).width;
-  const namePadding = 4;
-  ctx.fillStyle = Palette.world.backgroundAlt;
-  ctx.fillRect(
-    player.pos.x + player.width / 2 - nameWidth / 2 - namePadding,
-    player.pos.y - 18,
-    nameWidth + namePadding * 2,
-    14
-  );
+  const namePadding = 6;
+  const nameX = player.pos.x + player.width / 2 - nameWidth / 2 - namePadding;
+  const nameY = player.pos.y - 20;
+  
+  // Background border
+  ctx.fillStyle = Palette.world.outline;
+  ctx.fillRect(nameX - 1, nameY - 1, nameWidth + namePadding * 2 + 2, 16);
+  
+  // Background
+  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.fillRect(nameX, nameY, nameWidth + namePadding * 2, 14);
 
   // Name text
   ctx.fillStyle = Palette.ui.text;

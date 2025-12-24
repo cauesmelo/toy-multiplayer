@@ -9,16 +9,16 @@ export function renderHealthBar(ctx, player) {
   for (let i = 0; i < player.maxHealth; i++) {
     const x = startX + i * (boxSize + boxPadding);
 
-    // Outline
-    ctx.fillStyle = Palette.world.frame;
+    // Outline (darker for visibility on light background)
+    ctx.fillStyle = Palette.world.outline;
     ctx.fillRect(x - 2, startY - 2, boxSize + 4, boxSize + 4);
 
     if (i < player.health) {
-      // Filled box (alive) - softer red
+      // Filled box (alive) - vibrant red
       ctx.fillStyle = Palette.ui.warning;
     } else {
-      // Empty box (lost) - background alt
-      ctx.fillStyle = Palette.world.backgroundAlt;
+      // Empty box (lost) - white/light
+      ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
     }
 
     ctx.fillRect(x, startY, boxSize, boxSize);
@@ -32,16 +32,15 @@ export function renderDebugInfo(ctx, player, camera) {
   const panelHeight = 82;
   const padding = 8;
 
-  // Background
-  ctx.fillStyle = Palette.world.backgroundAlt;
+  // Background (white with slight transparency)
+  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
   ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
 
-  // Border (subtle)
-  ctx.fillStyle = Palette.world.frame;
-  ctx.fillRect(panelX, panelY, panelWidth, 2); // top
-  ctx.fillRect(panelX, panelY, 2, panelHeight); // left
-  ctx.fillRect(panelX + panelWidth - 2, panelY, 2, panelHeight); // right
-  ctx.fillRect(panelX, panelY + panelHeight - 2, panelWidth, 2); // bottom
+  // Border (darker for contrast)
+  ctx.fillStyle = Palette.world.outline;
+  ctx.strokeStyle = Palette.world.outline;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
 
   // Title
   ctx.fillStyle = Palette.ui.accent;
