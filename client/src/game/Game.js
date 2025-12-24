@@ -7,6 +7,7 @@ import { updatePlayer } from "./physics";
 import { resolveVertical } from "./resolve";
 import { renderWorld, renderPlayer, renderBullets } from "../render/renderer";
 import { renderHealthBar, renderDebugInfo } from "../render/ui";
+import { networkManager } from "../net/socket";
 
 export class Game {
   constructor(canvas) {
@@ -62,15 +63,24 @@ export class Game {
     input.focus();
   }
 
-  startGame(playerName) {
-    this.player = new Player(100, 1600, playerName);
-    this.gameState = "playing";
-    
-    // Hide menu
-    document.getElementById("name-entry-screen").style.display = "none";
-    document.getElementById("game").style.display = "block";
-    
-    console.log(`Game started! Welcome, ${playerName}`);
+  async startGame(playerName) {
+    try {
+      // Connect to server and send player name
+      await networkManager.connect(playerName);
+      
+      // Create local player
+      this.player = new Player(100, 1600, playerName);
+      this.gameState = "playing";
+      
+      // Hide menu
+      document.getElementById("name-entry-screen").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      
+      console.log(`🎮 Game started! Welcome, ${playerName}`);
+    } catch (error) {
+      console.error("Failed to connect to server:", error);
+      alert("Failed to connect to server. Please make sure the server is running.");
+    }
   }
 
   setupDevModeToggle() {
@@ -79,7 +89,35 @@ export class Game {
         this.devMode = !this.devMode;
         console.log(`Developer mode: ${this.devMode ? "ON" : "OFF"}`);
       }
+      
+      // ESC to disconnect
+      if (e.code === "Escape" && this.gameState === "playing") {
+        this.handleDisconnect();
+      }
     });
+  }
+
+  handleDisconnect() {
+    console.log("🔌 Disconnecting from server...");
+    
+    // Disconnect from server
+    networkManager.disconnect();
+    
+    // Reset game state
+    this.gameState = "menu";
+    this.player = null;
+    this.bullets = [];
+    
+    // Show menu, hide game
+    document.getElementById("name-entry-screen").style.display = "flex";
+    document.getElementById("game").style.display = "none";
+    
+    // Clear and focus input
+    const input = document.getElementById("player-name-input");
+    input.value = "";
+    input.focus();
+    
+    console.log("✅ Disconnected. Ready to reconnect.");
   }
 
   start() {

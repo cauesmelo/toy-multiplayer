@@ -18,3 +18,7 @@ vendor/
 # Go workspace file
 go.work
 
+# Air build artifacts
+tmp/
+build-errors.log
+
