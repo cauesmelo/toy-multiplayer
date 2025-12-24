@@ -11,8 +11,10 @@ export function updatePlayer(player, world, input, dt) {
   // Horizontal movement
   if (input.left) {
     player.vel.x -= MOVE_ACCEL * dt;
+    player.facingDirection = -1; // Face left
   } else if (input.right) {
     player.vel.x += MOVE_ACCEL * dt;
+    player.facingDirection = 1; // Face right
   } else {
     player.vel.x *= 0.8; // friction
   }

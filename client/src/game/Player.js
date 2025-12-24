@@ -9,9 +9,13 @@ export class Player {
 
     this.onGround = false;
     this.coyoteTime = 0; // Time since leaving ground
-    
+
     this.health = 3;
     this.maxHealth = 3;
+
+    this.facingDirection = 1; // 1 for right, -1 for left
+    this.fireRate = 0.2; // seconds between shots
+    this.lastShotTime = 0;
   }
 
   respawn() {
@@ -30,5 +34,13 @@ export class Player {
 
   isDead() {
     return this.health <= 0;
+  }
+
+  canShoot(currentTime) {
+    return currentTime - this.lastShotTime >= this.fireRate;
+  }
+
+  shoot(currentTime) {
+    this.lastShotTime = currentTime;
   }
 }

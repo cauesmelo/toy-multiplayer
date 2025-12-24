@@ -1,6 +1,7 @@
 import { Player } from "./Player";
 import { World } from "./World";
 import { Camera } from "./Camera";
+import { Bullet } from "./Bullet";
 import { keys } from "../input/keyboard";
 import { updatePlayer } from "./physics";
 import { resolveVertical } from "./resolve";
@@ -10,10 +11,12 @@ export class Game {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.lastTime = 0;
+    this.currentTime = 0;
 
     this.world = new World();
     this.player = new Player(100, 1600);
     this.camera = new Camera(canvas.width, canvas.height);
+    this.bullets = [];
 
     this.loop = this.loop.bind(this);
   }
@@ -25,6 +28,7 @@ export class Game {
   loop(time) {
     const dt = (time - this.lastTime) / 1000;
     this.lastTime = time;
+    this.currentTime = time / 1000; // Convert to seconds
 
     this.update(dt);
     this.render();
@@ -35,6 +39,23 @@ export class Game {
   update(dt) {
     updatePlayer(this.player, this.world, keys, dt);
     resolveVertical(this.player, this.world);
+
+    // Handle shooting
+    if (keys.shoot && this.player.canShoot(this.currentTime)) {
+      this.fireBullet();
+      this.player.shoot(this.currentTime);
+    }
+
+    // Update bullets
+    this.bullets = this.bullets.filter((bullet) => {
+      bullet.update(dt);
+      // Remove bullets that are expired or out of bounds
+      return (
+        !bullet.isExpired() &&
+        bullet.pos.x > 0 &&
+        bullet.pos.x < this.world.width
+      );
+    });
 
     // Check if player fell into pit (death zone)
     if (this.player.pos.y > this.world.height) {
@@ -52,6 +73,14 @@ export class Game {
     }
 
     this.camera.follow(this.player, this.world.width, this.world.height);
+  }
+
+  fireBullet() {
+    // Spawn bullet from center of player, in facing direction
+    const bulletX = this.player.pos.x + this.player.width / 2;
+    const bulletY = this.player.pos.y + this.player.height / 2;
+    const bullet = new Bullet(bulletX, bulletY, this.player.facingDirection);
+    this.bullets.push(bullet);
   }
 
   render() {
@@ -80,6 +109,32 @@ export class Game {
       this.player.width,
       this.player.height
     );
+
+    // Gun barrel indicator
+    this.ctx.fillStyle = "white";
+    const gunLength = 15;
+    const gunY = this.player.pos.y + this.player.height / 2 - 2;
+    if (this.player.facingDirection === 1) {
+      this.ctx.fillRect(
+        this.player.pos.x + this.player.width,
+        gunY,
+        gunLength,
+        4
+      );
+    } else {
+      this.ctx.fillRect(this.player.pos.x - gunLength, gunY, gunLength, 4);
+    }
+
+    // Bullets
+    this.ctx.fillStyle = "yellow";
+    for (const bullet of this.bullets) {
+      this.ctx.fillRect(
+        bullet.pos.x,
+        bullet.pos.y,
+        bullet.width,
+        bullet.height
+      );
+    }
 
     // Restore camera transformation
     this.ctx.restore();
