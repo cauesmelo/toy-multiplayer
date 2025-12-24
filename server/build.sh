@@ -3,23 +3,28 @@ set -e
 
 echo "🔨 Building client..."
 cd ../client
+npm install
 npm run build
 
-echo "📦 Copying client build to server/cmd/server/static..."
+echo "🏗️  Building Go server (Linux)..."
 cd ../server
-rm -rf cmd/server/static
-mkdir -p cmd/server/static
-cp -r ../client/dist/* cmd/server/static/
 
-echo "🏗️  Building Go server..."
-cd cmd/server
-go build -o ../../bin/server
+mkdir -p bin
 
-echo "✅ Build complete! Binary is in server/bin/server"
+GOOS=linux GOARCH=amd64 go build -o bin/game-server ./cmd/server
+
+echo "✅ Build complete!"
 echo ""
-echo "To run the server:"
-echo "  ./bin/server"
+echo "Artifacts:"
+echo "  - Client: client/dist/"
+echo "  - Server: server/bin/game-server"
 echo ""
-echo "Or from the server directory:"
-echo "  cd server && ./bin/server"
+echo "Deployment layout should be:"
+echo "  /opt/toy-game/"
+echo "    ├── game-server"
+echo "    └── dist/"
+echo ""
+echo "To deploy:"
+echo "  scp server/bin/game-server root@SERVER_IP:/opt/toy-game/"
+echo "  scp -r client/dist root@SERVER_IP:/opt/toy-game/"
 

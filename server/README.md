@@ -37,44 +37,87 @@ cd server
 
 This will:
 
-1. Build the client (Vite)
-2. Copy the client build to `server/cmd/server/static/`
-3. Build the Go server with embedded static files
-4. Output a single binary to `server/bin/server`
+1. Build the client (Vite) → `client/dist/`
+2. Build the Go server for Linux → `server/bin/game-server`
 
-### Run the Production Server
+### Test Locally
+
+For local testing with the production build:
 
 ```bash
 cd server
-./bin/server
+./build-local.sh
+
+# This creates ./runtime/ with the correct layout
+cd ../runtime
+./game-server
 ```
 
-Or from the root:
+The server will serve both the game and WebSocket on port 80:
 
-```bash
-./server/bin/server
-```
-
-The server will serve both the game and WebSocket on port 8080:
-
-- Game: http://localhost:8080
-- WebSocket: ws://localhost:8080/ws
-- Health check: http://localhost:8080/health
+- Game: http://localhost
+- WebSocket: ws://localhost/ws
+- Health check: http://localhost/health
 
 ### Environment Variables
 
-- `PORT`: Server port (default: 8080)
+- `PORT`: Server port (default: 8080 for dev, 80 for production)
 
 ## Deployment
 
-The built binary in `server/bin/server` is self-contained and includes all static files. You can deploy just this single binary to any cloud provider.
-
 ### Deployment
 
-The built binary can be deployed to any VPS or cloud platform that supports Go applications. Simply:
+### Runtime Layout
 
-1. Build the binary: `./build.sh`
-2. Copy `server/bin/server` to your deployment server
-3. Run it with `./server`
+The server expects this directory structure:
 
-The server will use port 8080 by default, or read from the `PORT` environment variable.
+```
+/opt/toy-game/
+├── game-server   (binary)
+└── dist/         (static files)
+```
+
+### Deploy to VPS
+
+After running `./build.sh`:
+
+```bash
+# Copy files to server
+scp server/bin/game-server root@SERVER_IP:/opt/toy-game/
+scp -r client/dist root@SERVER_IP:/opt/toy-game/
+
+# SSH into server
+ssh root@SERVER_IP
+cd /opt/toy-game
+./game-server
+```
+
+### Systemd Service
+
+Create `/etc/systemd/system/game-server.service`:
+
+```ini
+[Unit]
+Description=Multiplayer Game Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/toy-game
+ExecStart=/opt/toy-game/game-server
+Restart=always
+Environment="PORT=80"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+systemctl enable game-server
+systemctl start game-server
+```
+
+The server reads from the `PORT` environment variable (default: 8080 for dev, 80 for production).

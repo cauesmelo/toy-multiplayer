@@ -1,17 +1,12 @@
 package main
 
 import (
-	"embed"
-	"io/fs"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/cauesmelo/toy-multiplayer/server/internal/network"
 )
-
-//go:embed all:static
-var staticFiles embed.FS
 
 func main() {
 	// WebSocket endpoint
@@ -23,14 +18,8 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	// Serve static files
-	staticFS, err := fs.Sub(staticFiles, "static")
-	if err != nil {
-		log.Fatal("Failed to load static files: ", err)
-	}
-	
-	fileServer := http.FileServer(http.FS(staticFS))
-	http.Handle("/", fileServer)
+	// Serve static files from ./dist directory
+	http.Handle("/", http.FileServer(http.Dir("./dist")))
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
@@ -43,7 +32,8 @@ func main() {
 	log.Printf("Starting server on port %s", port)
 	log.Printf("WebSocket: ws://localhost:%s/ws", port)
 	log.Printf("HTTP: http://localhost:%s", port)
-	
+	log.Printf("Serving static files from: ./dist")
+
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal("Server error: ", err)
 	}

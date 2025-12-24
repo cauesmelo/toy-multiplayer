@@ -1,5 +1,7 @@
 bin/
-cmd/server/static/
+dist/
+tmp/
+runtime/
 *.exe
 *.dll
 *.so
