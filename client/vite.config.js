@@ -1,0 +1,10 @@
+export default {
+  server: {
+    proxy: {
+      "/ws": {
+        target: "http://localhost:8080",
+        ws: true,
+      },
+    },
+  },
+};
