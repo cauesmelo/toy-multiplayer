@@ -20,7 +20,19 @@ export class Game {
     this.camera = new Camera(canvas.width, canvas.height);
     this.bullets = [];
 
+    this.devMode = false; // Developer mode toggle
+
     this.loop = this.loop.bind(this);
+    this.setupDevModeToggle();
+  }
+
+  setupDevModeToggle() {
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "KeyQ") {
+        this.devMode = !this.devMode;
+        console.log(`Developer mode: ${this.devMode ? "ON" : "OFF"}`);
+      }
+    });
   }
 
   start() {
@@ -103,6 +115,10 @@ export class Game {
 
     // UI overlay (not affected by camera)
     renderHealthBar(this.ctx, this.player);
-    renderDebugInfo(this.ctx, this.player, this.camera);
+    
+    // Debug info (only in dev mode)
+    if (this.devMode) {
+      renderDebugInfo(this.ctx, this.player, this.camera);
+    }
   }
 }

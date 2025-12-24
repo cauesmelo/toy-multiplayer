@@ -25,19 +25,33 @@ export function renderHealthBar(ctx, player) {
 }
 
 export function renderDebugInfo(ctx, player, camera) {
+  // Semi-transparent background for better readability
+  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+  ctx.fillRect(5, 50, 260, 75);
+  
+  // Border
+  ctx.strokeStyle = "#2c3e50";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(5, 50, 260, 75);
+  
+  // Title
+  ctx.fillStyle = "#e63946";
+  ctx.font = "bold 12px monospace";
+  ctx.fillText("DEV MODE (Q to toggle)", 10, 65);
+  
+  // Debug info
   ctx.fillStyle = "#2c3e50";
-  ctx.font = "12px monospace";
-
+  ctx.font = "11px monospace";
   ctx.fillText(
     `Position: ${Math.round(player.pos.x)}, ${Math.round(player.pos.y)}`,
     10,
-    60
+    82
   );
   ctx.fillText(
     `Camera: ${Math.round(camera.x)}, ${Math.round(camera.y)}`,
     10,
-    75
+    96
   );
-  ctx.fillText(`On Ground: ${player.onGround}`, 10, 90);
-  ctx.fillText(`Coyote Time: ${player.coyoteTime.toFixed(3)}s`, 10, 105);
+  ctx.fillText(`On Ground: ${player.onGround}`, 10, 110);
+  ctx.fillText(`Coyote Time: ${player.coyoteTime.toFixed(3)}s`, 10, 120);
 }
