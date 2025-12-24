@@ -9,13 +9,98 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #1a1a1a;
+  background-color: #161827;
   font-family: system-ui, -apple-system, sans-serif;
 }
 
 #game {
-  border: 2px solid #333;
-  background-color: #000;
+  border: 2px solid #2a2d44;
+  background-color: #161827;
   image-rendering: pixelated;
+  box-shadow: 0 4px 20px rgba(15, 17, 26, 0.9);
+}
+
+/* Name Entry Screen */
+#name-entry-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+}
+
+.name-entry-container {
+  background-color: #1c1f33;
+  padding: 40px;
+  border-radius: 10px;
+  border: 2px solid #2a2d44;
+  box-shadow: 0 4px 20px rgba(15, 17, 26, 0.9);
+  text-align: center;
+  min-width: 400px;
+}
+
+.name-entry-container h1 {
+  color: #ff5c5c;
+  font-size: 2.5em;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(15, 17, 26, 0.5);
+}
+
+#name-entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+#name-error {
+  color: #ff6b6b;
+  font-size: 0.9em;
+  margin-top: -10px;
+  text-align: center;
+}
+
+#name-entry-form label {
+  color: #e6e6eb;
+  font-size: 1.2em;
+  font-weight: 500;
+}
+
+#player-name-input {
+  padding: 15px;
+  font-size: 1.1em;
+  border: 2px solid #5f678a;
+  border-radius: 5px;
+  background-color: #161827;
+  color: #e6e6eb;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+#player-name-input:focus {
+  outline: none;
+  border-color: #4fd1c5;
+  background-color: #1c1f33;
+}
+
+#name-entry-form button {
+  padding: 15px 30px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #1e1e2e;
+  background-color: #4fd1c5;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#name-entry-form button:hover {
+  background-color: #6bff95;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 209, 197, 0.4);
+}
+
+#name-entry-form button:active {
+  transform: translateY(0);
 }
 

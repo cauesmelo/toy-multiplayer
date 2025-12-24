@@ -3,11 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Toy Multiplayer</title>
+    <title>Rio de Janeiro simulator</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <canvas id="game" width="800" height="600"></canvas>
+    <div id="name-entry-screen">
+      <div class="name-entry-container">
+        <h1>Rio de Janeiro simulator</h1>
+        <form id="name-entry-form">
+          <label for="player-name-input">Enter your name:</label>
+          <input
+            type="text"
+            id="player-name-input"
+            maxlength="10"
+            placeholder="Enter name"
+            autocomplete="off"
+          />
+          <span id="name-error" style="display: none"
+            >Name cannot be empty (max 10 characters)</span
+          >
+          <button type="submit">Start Game</button>
+        </form>
+      </div>
+    </div>
+    <canvas id="game" width="800" height="600" style="display: none"></canvas>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

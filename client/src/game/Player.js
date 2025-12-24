@@ -1,5 +1,5 @@
 export class Player {
-  constructor(x, y) {
+  constructor(x, y, name = "Player") {
     this.pos = { x, y };
     this.vel = { x: 0, y: 0 };
     this.spawnPos = { x, y };
@@ -16,6 +16,8 @@ export class Player {
     this.facingDirection = 1;
     this.fireRate = 0.3;
     this.lastShotTime = 0;
+
+    this.name = name;
   }
 
   respawn() {

@@ -16,14 +16,61 @@ export class Game {
     this.currentTime = 0;
 
     this.world = new World();
-    this.player = new Player(100, 1600);
+    this.player = null; // Will be created after name entry
     this.camera = new Camera(canvas.width, canvas.height);
     this.bullets = [];
 
     this.devMode = false; // Developer mode toggle
+    this.gameState = "menu"; // "menu" or "playing"
 
     this.loop = this.loop.bind(this);
     this.setupDevModeToggle();
+    this.setupNameEntry();
+  }
+
+  setupNameEntry() {
+    const form = document.getElementById("name-entry-form");
+    const input = document.getElementById("player-name-input");
+    const errorMsg = document.getElementById("name-error");
+    
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const playerName = input.value.trim();
+      
+      // Validate name is not empty
+      if (playerName.length === 0) {
+        errorMsg.style.display = "block";
+        input.focus();
+        return;
+      }
+      
+      // Hide error if shown
+      errorMsg.style.display = "none";
+      
+      // Start game with validated name
+      this.startGame(playerName);
+    });
+    
+    // Hide error on input
+    input.addEventListener("input", () => {
+      if (input.value.trim().length > 0) {
+        errorMsg.style.display = "none";
+      }
+    });
+    
+    // Focus input on load
+    input.focus();
+  }
+
+  startGame(playerName) {
+    this.player = new Player(100, 1600, playerName);
+    this.gameState = "playing";
+    
+    // Hide menu
+    document.getElementById("name-entry-screen").style.display = "none";
+    document.getElementById("game").style.display = "block";
+    
+    console.log(`Game started! Welcome, ${playerName}`);
   }
 
   setupDevModeToggle() {
@@ -51,6 +98,8 @@ export class Game {
   }
 
   update(dt) {
+    if (this.gameState !== "playing" || !this.player) return;
+
     updatePlayer(this.player, this.world, keys, dt);
     resolveVertical(this.player, this.world);
 
@@ -70,11 +119,11 @@ export class Game {
         bullet.pos.x < this.world.width
       );
     });
-
+    
     // Check if player fell into pit (death zone)
     if (this.player.pos.y > this.world.height) {
       const remainingHealth = this.player.takeDamage(1);
-
+      
       if (remainingHealth > 0) {
         // Still alive, respawn
         this.player.respawn();
@@ -85,7 +134,7 @@ export class Game {
         this.player.respawn();
       }
     }
-
+    
     this.camera.follow(this.player, this.world.width, this.world.height);
   }
 
@@ -98,6 +147,8 @@ export class Game {
   }
 
   render() {
+    if (this.gameState !== "playing" || !this.player) return;
+
     // Clear entire canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 

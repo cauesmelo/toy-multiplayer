@@ -1,3 +1,5 @@
+import { Palette } from "./palette";
+
 export function renderHealthBar(ctx, player) {
   const boxSize = 30;
   const boxPadding = 5;
@@ -7,51 +9,69 @@ export function renderHealthBar(ctx, player) {
   for (let i = 0; i < player.maxHealth; i++) {
     const x = startX + i * (boxSize + boxPadding);
 
+    // Outline
+    ctx.fillStyle = Palette.world.frame;
+    ctx.fillRect(x - 2, startY - 2, boxSize + 4, boxSize + 4);
+
     if (i < player.health) {
-      // Filled box (alive) - red
-      ctx.fillStyle = "#e63946";
+      // Filled box (alive) - softer red
+      ctx.fillStyle = Palette.ui.warning;
     } else {
-      // Empty box (lost) - light gray
-      ctx.fillStyle = "#95a5a6";
+      // Empty box (lost) - background alt
+      ctx.fillStyle = Palette.world.backgroundAlt;
     }
 
     ctx.fillRect(x, startY, boxSize, boxSize);
-
-    // Outline - dark to match player
-    ctx.strokeStyle = "#2c3e50";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, startY, boxSize, boxSize);
   }
 }
 
 export function renderDebugInfo(ctx, player, camera) {
-  // Semi-transparent background for better readability
-  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-  ctx.fillRect(5, 50, 260, 75);
-  
-  // Border
-  ctx.strokeStyle = "#2c3e50";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(5, 50, 260, 75);
-  
+  const panelX = 5;
+  const panelY = 50;
+  const panelWidth = 280;
+  const panelHeight = 82;
+  const padding = 8;
+
+  // Background
+  ctx.fillStyle = Palette.world.backgroundAlt;
+  ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+  // Border (subtle)
+  ctx.fillStyle = Palette.world.frame;
+  ctx.fillRect(panelX, panelY, panelWidth, 2); // top
+  ctx.fillRect(panelX, panelY, 2, panelHeight); // left
+  ctx.fillRect(panelX + panelWidth - 2, panelY, 2, panelHeight); // right
+  ctx.fillRect(panelX, panelY + panelHeight - 2, panelWidth, 2); // bottom
+
   // Title
-  ctx.fillStyle = "#e63946";
-  ctx.font = "bold 12px monospace";
-  ctx.fillText("DEV MODE (Q to toggle)", 10, 65);
-  
+  ctx.fillStyle = Palette.ui.accent;
+  ctx.font = "bold 11px monospace";
+  ctx.fillText("DEV MODE (Q to toggle)", panelX + padding, panelY + 16);
+
   // Debug info
-  ctx.fillStyle = "#2c3e50";
-  ctx.font = "11px monospace";
+  ctx.fillStyle = Palette.ui.text;
+  ctx.font = "10px monospace";
+
+  const textX = panelX + padding;
+  let textY = panelY + 32;
+  const lineHeight = 14;
+
   ctx.fillText(
     `Position: ${Math.round(player.pos.x)}, ${Math.round(player.pos.y)}`,
-    10,
-    82
+    textX,
+    textY
   );
+  textY += lineHeight;
+
   ctx.fillText(
     `Camera: ${Math.round(camera.x)}, ${Math.round(camera.y)}`,
-    10,
-    96
+    textX,
+    textY
   );
-  ctx.fillText(`On Ground: ${player.onGround}`, 10, 110);
-  ctx.fillText(`Coyote Time: ${player.coyoteTime.toFixed(3)}s`, 10, 120);
+  textY += lineHeight;
+
+  ctx.fillText(`On Ground: ${player.onGround}`, textX, textY);
+  textY += lineHeight;
+
+  ctx.fillText(`Coyote: ${player.coyoteTime.toFixed(3)}s`, textX, textY);
 }
