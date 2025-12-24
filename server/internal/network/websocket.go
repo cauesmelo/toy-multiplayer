@@ -3,7 +3,9 @@ package network
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/cauesmelo/toy-multiplayer/server/internal/game"
 	"github.com/gorilla/websocket"
@@ -99,6 +101,11 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	colorManager := gameServer.GetColorManager()
 	playerColor := colorManager.AssignColor(joinPayload.Name)
 
+	// Random spawn position
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	spawnX := float64(rng.Intn(3000) + 100) // Random X between 100 and 3100
+	spawnY := 100.0                         // Spawn from sky
+
 	// Create player
 	player := &game.Player{
 		Name:      joinPayload.Name,
@@ -106,8 +113,8 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		Conn:      conn,
 		Connected: true,
 		Position: game.PositionPayload{
-			X:      100,
-			Y:      1600,
+			X:      spawnX,
+			Y:      spawnY,
 			Health: 3,
 		},
 	}

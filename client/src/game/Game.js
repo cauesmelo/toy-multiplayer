@@ -74,8 +74,21 @@ export class Game {
       // Update or create other player
       if (this.otherPlayers.has(playerData.name)) {
         const otherPlayer = this.otherPlayers.get(playerData.name);
-        otherPlayer.pos.x = playerData.x;
-        otherPlayer.pos.y = playerData.y;
+        
+        // Check if player respawned/teleported (large position change)
+        const distanceFromTarget = 
+          Math.abs(otherPlayer.pos.x - playerData.x) + 
+          Math.abs(otherPlayer.pos.y - playerData.y);
+        
+        if (distanceFromTarget > 500) {
+          // Teleported/respawned - snap to new position immediately
+          otherPlayer.pos.x = playerData.x;
+          otherPlayer.pos.y = playerData.y;
+        }
+        
+        // Update target position for interpolation
+        otherPlayer.targetPos.x = playerData.x;
+        otherPlayer.targetPos.y = playerData.y;
         otherPlayer.vel.x = playerData.velX;
         otherPlayer.vel.y = playerData.velY;
         otherPlayer.facingDirection = playerData.facing;
@@ -281,7 +294,21 @@ export class Game {
       this.player.shoot(this.currentTime);
     }
     
+    // Interpolate other players' positions for smooth movement
+    this.interpolateOtherPlayers(dt);
+    
     this.camera.follow(this.player, this.world.width, this.world.height);
+  }
+
+  interpolateOtherPlayers(dt) {
+    // Smoothly move other players towards their target positions
+    for (const otherPlayer of this.otherPlayers.values()) {
+      // Linear interpolation (lerp)
+      const lerpFactor = Math.min(1, otherPlayer.interpolationSpeed);
+      
+      otherPlayer.pos.x += (otherPlayer.targetPos.x - otherPlayer.pos.x) * lerpFactor;
+      otherPlayer.pos.y += (otherPlayer.targetPos.y - otherPlayer.pos.y) * lerpFactor;
+    }
   }
 
   fireBullet() {

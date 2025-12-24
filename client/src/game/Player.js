@@ -20,6 +20,10 @@ export class Player {
 
     this.name = name;
     this.color = color;
+
+    // Interpolation for other players (smooth network movement)
+    this.targetPos = { x, y };
+    this.interpolationSpeed = 0.3; // Higher = faster catch-up (0-1)
   }
 
   respawn() {
