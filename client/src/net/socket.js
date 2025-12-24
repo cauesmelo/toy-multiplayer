@@ -94,7 +94,7 @@ class NetworkManager {
     }
   }
 
-  sendPosition(x, y, velX, velY, facing, onGround) {
+  sendPosition(x, y, velX, velY, facing, onGround, health) {
     this.send({
       type: "position",
       payload: {
@@ -104,6 +104,7 @@ class NetworkManager {
         velY,
         facing,
         onGround,
+        health,
       },
     });
   }

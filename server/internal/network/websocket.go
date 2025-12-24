@@ -112,6 +112,7 @@ type PositionPayload struct {
 	VelY     float64 `json:"velY"`
 	Facing   int     `json:"facing"`
 	OnGround bool    `json:"onGround"`
+	Health   int     `json:"health"`
 }
 
 type PlayerState struct {
@@ -123,6 +124,7 @@ type PlayerState struct {
 	VelY     float64 `json:"velY"`
 	Facing   int     `json:"facing"`
 	OnGround bool    `json:"onGround"`
+	Health   int     `json:"health"`
 }
 
 type GameStatePayload struct {
@@ -205,6 +207,7 @@ func (gs *GameServer) BroadcastGameState() {
 			VelY:     player.Position.VelY,
 			Facing:   player.Position.Facing,
 			OnGround: player.Position.OnGround,
+			Health:   player.Position.Health,
 		})
 		player.mu.Unlock()
 	}
@@ -286,8 +289,9 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		Conn:      conn,
 		Connected: true,
 		Position: PositionPayload{
-			X: 100,
-			Y: 1600,
+			X:      100,
+			Y:      1600,
+			Health: 3,
 		},
 	}
 

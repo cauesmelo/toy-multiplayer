@@ -66,6 +66,7 @@ export class Game {
         otherPlayer.vel.y = playerData.velY;
         otherPlayer.facingDirection = playerData.facing;
         otherPlayer.onGround = playerData.onGround;
+        otherPlayer.health = playerData.health;
       } else {
         // Create new player
         const otherPlayer = new Player(
@@ -74,6 +75,7 @@ export class Game {
           playerData.name,
           playerData.color
         );
+        otherPlayer.health = playerData.health;
         this.otherPlayers.set(playerData.name, otherPlayer);
         console.log(`➕ Player ${playerData.name} joined the game`);
       }
@@ -241,7 +243,8 @@ export class Game {
         this.player.vel.x,
         this.player.vel.y,
         this.player.facingDirection,
-        this.player.onGround
+        this.player.onGround,
+        this.player.health
       );
       this.lastPositionSent = this.currentTime;
     }
@@ -302,13 +305,13 @@ export class Game {
     // Render game world
     renderWorld(this.ctx, this.world);
     
-    // Render other players
+    // Render other players (with health boxes)
     for (const otherPlayer of this.otherPlayers.values()) {
-      renderPlayer(this.ctx, otherPlayer);
+      renderPlayer(this.ctx, otherPlayer, false);
     }
     
-    // Render local player on top
-    renderPlayer(this.ctx, this.player);
+    // Render local player on top (without health boxes below)
+    renderPlayer(this.ctx, this.player, true);
     renderBullets(this.ctx, this.bullets);
 
     // Restore camera transformation

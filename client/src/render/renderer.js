@@ -21,7 +21,7 @@ export function renderWorld(ctx, world) {
   }
 }
 
-export function renderPlayer(ctx, player) {
+export function renderPlayer(ctx, player, isCurrentPlayer = false) {
   // Player name above head
   ctx.font = "bold 16px sans-serif";
   ctx.textAlign = "center";
@@ -91,6 +91,33 @@ export function renderPlayer(ctx, player) {
     // Gun body
     ctx.fillStyle = Palette.ui.accent;
     ctx.fillRect(player.pos.x - gunLength, gunY, gunLength, gunThickness);
+  }
+
+  // Health boxes below player (only for other players, not current player)
+  if (!isCurrentPlayer) {
+    const boxSize = 8;
+    const boxPadding = 2;
+    const totalWidth = (boxSize * player.maxHealth) + (boxPadding * (player.maxHealth - 1));
+    const startX = player.pos.x + (player.width / 2) - (totalWidth / 2);
+    const startY = player.pos.y + player.height + 4;
+
+    for (let i = 0; i < player.maxHealth; i++) {
+      const x = startX + i * (boxSize + boxPadding);
+
+      // Outline
+      ctx.fillStyle = Palette.world.outline;
+      ctx.fillRect(x - 1, startY - 1, boxSize + 2, boxSize + 2);
+
+      if (i < player.health) {
+        // Filled box (alive)
+        ctx.fillStyle = Palette.ui.warning;
+      } else {
+        // Empty box (lost)
+        ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+      }
+
+      ctx.fillRect(x, startY, boxSize, boxSize);
+    }
   }
 }
 
