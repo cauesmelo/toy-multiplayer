@@ -1,24 +1,6 @@
-# Binaries
+bin/
+cmd/server/static/
 *.exe
-*.exe~
 *.dll
 *.so
 *.dylib
-cmd/server/server
-
-# Test binary
-*.test
-
-# Output of the go coverage tool
-*.out
-
-# Dependency directories
-vendor/
-
-# Go workspace file
-go.work
-
-# Air build artifacts
-tmp/
-build-errors.log
-

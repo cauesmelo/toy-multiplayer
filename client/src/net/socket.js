@@ -15,7 +15,11 @@ class NetworkManager {
       this.playerName = playerName;
       this.joinResolver = resolve;
       this.intentionalDisconnect = false;
-      this.socket = new WebSocket("ws://localhost:5173/ws");
+      
+      // Use relative WebSocket URL (works in both dev and production)
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
         console.log("✅ Connected to server");
